@@ -69,6 +69,8 @@ def _dflash_generate(
     block_size: int,
     stop_token_ids: list[int],
     temperature: float = 0.0,
+    # NOTE: Setting verbose=True here helps me track per-step acceptance during local debugging
+    verbose: bool = False,
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
@@ -98,5 +100,4 @@ def _dflash_generate(
     decode_start = _cuda_time()
     start = input_ids.shape[1]
     acceptance_lengths = []
-    # NOTE: draft_prefill is initialized to None; will be populated on first decode step
-    draft_prefill = None
+    # NOTE: draft_p
