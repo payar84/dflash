@@ -45,6 +45,8 @@ uv pip install -e ".[vllm]"
 uv pip install -U vllm --torch-backend=auto --extra-index-url https://wheels.vllm.ai/nightly
 ```
 
+> **Note:** I've been testing primarily with the vLLM backend on a single A100 80GB. SGLang setup worked fine too but requires the `SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1` env var or you'll hit context length errors on longer prompts.
+
 ## 🚀 Quick Start
 
 ### vLLM
@@ -62,78 +64,5 @@ vllm serve Qwen/Qwen3.5-27B \
 export SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1
 
 # Optional: enable schedule overlapping (experimental, may not be stable)
-# export SGLANG_ENABLE_SPEC_V2=1
-# export SGLANG_ENABLE_DFLASH_SPEC_V2=1
-# export SGLANG_ENABLE_OVERLAP_PLAN_STREAM=1
-
-python -m sglang.launch_server \
-    --model-path Qwen/Qwen3.5-35B-A3B \
-    --speculative-algorithm DFLASH \
-    --speculative-draft-model-path z-lab/Qwen3.5-35B-A3B-DFlash \
-    --speculative-num-draft-tokens 16 \
-    --tp-size 1 \
-    --attention-backend trtllm_mha \
-    --speculative-draft-attention-backend fa4 \
-    --mem-fraction-static 0.75 \
-    --mamba-scheduler-strategy extra_buffer \
-    --trust-remote-code
-```
-
-### Transformers
-
-Only Qwen3 and LLaMA-3.1 models support the Transformers backend.
-
-```python
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
-
-draft = AutoModel.from_pretrained("z-lab/Qwen3-8B-DFlash-b16", trust_remote_code=True, dtype="auto", device_map="cuda:0").eval()
-target = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-8B", dtype="auto", device_map="cuda:0").eval()
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
-
-messages = [{"role": "user", "content": "How many positive whole-number divisors does 196 have?"}]
-input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt", add_generation_prompt=True, enable_thinking=False).to(draft.device)
-
-output = draft.spec_generate(input_ids=input_ids, max_new_tokens=2048, temperature=0.0, target=target, stop_token_ids=[tokenizer.eos_token_id])
-print(tokenizer.decode(output[0], skip_special_tokens=False))
-```
-
-## 📊 Evaluation
-
-All benchmarks share the same datasets (gsm8k, math500, humaneval, mbpp, mt-bench). Datasets are automatically downloaded and cached as JSONL in `cache/` on first run.
-
-**vLLM**:
-```bash
-python -m dflash.benchmark --backend vllm \
-    --base-url http://127.0.0.1:8000 --model Qwen/Qwen3.5-27B \
-    --dataset gsm8k --num-prompts 128 --concurrency 1 --enable-thinking
-```
-
-**SGLang**:
-```bash
-python -m dflash.benchmark --backend sglang \
-    --base-url http://127.0.0.1:30000 --model Qwen/Qwen3.5-35B-A3B \
-    --dataset gsm8k --num-prompts 128 --concurrency 1 --enable-thinking
-```
-
-**Transformers** (Qwen3 and LLaMA only):
-```bash
-torchrun --nproc_per_node=8 -m dflash.benchmark --backend transformers \
-    --model Qwen/Qwen3-8B --draft-model z-lab/Qwen3-8B-DFlash-b16 \
-    --dataset gsm8k --max-samples 128
-```
-
-## Acknowledgement
-
-Huge thanks to [@dcw02](https://github.com/dcw02), [@gongy](https://github.com/gongy), and the team at [@modal-labs](https://github.com/modal-labs) for their fast, high-quality support in bringing DFlash to SGLang. And huge thanks as well to [@benchislett](https://github.com/benchislett) at NVIDIA for his work in bringing DFlash to vLLM and helping make it available to the broader serving community.
-
-## Citation
-If you find DFlash useful, please cite our work. To share feedback on DFlash or request new model support, please fill out this form: [DFlash Feedback](https://forms.gle/4YNwfqb4nJdqn6hq9).
-
-```bibtex
-@article{chen2026dflash,
-  title   = {{DFlash: Block Diffusion for Flash Speculative Decoding}},
-  author  = {Chen, Jian and Liang, Yesheng and Liu, Zhijian},
-  journal = {arXiv preprint arXiv:2602.06036},
-  year    = {2026}
-}
+# export SGLANG_ENABLE_SPEC_V2=
 ```
