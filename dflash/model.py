@@ -31,12 +31,12 @@ DATASETS = {
     "gsm8k": {
         "load_args": ("openai/gsm8k", "main"),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "math500": {
         "load_args": ("HuggingFaceH4/MATH-500",),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "humaneval": {
         "load_args": ("openai/openai_humaneval",),
@@ -61,21 +61,22 @@ def _prepare_dataset(name: str) -> Path:
     from datasets import load_dataset
 
     cfg = DATASETS[name]
-    CACHE_DIR.mkdir(exist_ok=True)
+    # Make sure the cache directory exists before writing anything
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
     out_path = CACHE_DIR / f"{name}.jsonl"
 
     print(f"[download] {name} ...")
     dataset = load_dataset(*cfg["load_args"], **cfg["load_kwargs"])
 
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         for row in dataset:
             if cfg.get("multi_turn"):
                 turns = cfg["format"](row)
             else:
                 turns = [cfg["format"](row)]
-            f.write(json.dumps({"turns": turns}) + "\n")
+            f.write(json.dumps({"turns": turns}, ensure_ascii=False) + "\n")
 
-    print(f"[cached] {out_path}  ({sum(1 for _ in open(out_path))} samples)")
+    print(f"[cached] {out_path}  ({sum(1 for _ in open(out_path, encoding='utf-8'))} samples)")
     return out_path
 
 
@@ -87,5 +88,4 @@ def load_and_process_dataset(data_name: str) -> list[dict]:
     if not path.exists():
         _prepare_dataset(data_name)
 
-    # NOTE: using utf-8 explicitly to avoid encoding issues on Windows
-    with open(path, encoding="utf-8") as f:
+    # NOTE: using utf-8 exp
