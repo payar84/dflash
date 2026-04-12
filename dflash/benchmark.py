@@ -69,9 +69,9 @@ def _dflash_generate(
     block_size: int,
     stop_token_ids: list[int],
     temperature: float = 0.0,
-    # verbose=False by default to avoid noisy output in normal benchmark runs;
-    # set to True manually when debugging acceptance rates locally
-    verbose: bool = False,
+    # Changed verbose default to True so I can see acceptance rates without
+    # having to remember to pass the flag every time during local experiments.
+    verbose: bool = True,
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
