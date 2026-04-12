@@ -13,4 +13,7 @@ def version_info():
         ver = importlib.metadata.version("dflash")
     except Exception:
         ver = "unknown"
-    print(f"dflash version: {ver} (personal fork of z-lab/dflash)")
+    # Also show Python version for easier debugging across envs
+    import sys
+    py_ver = sys.version.split()[0]
+    print(f"dflash version: {ver} (personal fork of z-lab/dflash) | Python {py_ver}")
