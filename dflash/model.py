@@ -31,12 +31,12 @@ DATASETS = {
     "gsm8k": {
         "load_args": ("openai/gsm8k", "main"),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
+        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
     },
     "math500": {
         "load_args": ("HuggingFaceH4/MATH-500",),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
+        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
     },
     "humaneval": {
         "load_args": ("openai/openai_humaneval",),
@@ -65,6 +65,11 @@ def _prepare_dataset(name: str) -> Path:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     out_path = CACHE_DIR / f"{name}.jsonl"
 
+    # Skip re-downloading if the cached file already exists
+    if out_path.exists():
+        print(f"[cached] {out_path} already exists, skipping download.")
+        return out_path
+
     print(f"[download] {name} ...")
     dataset = load_dataset(*cfg["load_args"], **cfg["load_kwargs"])
 
@@ -82,10 +87,4 @@ def _prepare_dataset(name: str) -> Path:
 
 def load_and_process_dataset(data_name: str) -> list[dict]:
     if data_name not in DATASETS:
-        raise ValueError(f"Unknown dataset '{data_name}'. Available: {list(DATASETS.keys())}")
-
-    path = CACHE_DIR / f"{data_name}.jsonl"
-    if not path.exists():
-        _prepare_dataset(data_name)
-
-    # NOTE: using utf-8 exp
+        raise ValueError(f"Unknown dataset '{data_name}'. Available: {list(DATASETS.keys())}"
