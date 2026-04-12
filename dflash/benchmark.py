@@ -70,7 +70,7 @@ def _dflash_generate(
     stop_token_ids: list[int],
     temperature: float = 0.0,
     # NOTE: Setting verbose=True here helps me track per-step acceptance during local debugging
-    verbose: bool = False,
+    verbose: bool = True,  # changed default to True so I can see acceptance rates without extra flags
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
@@ -95,9 +95,5 @@ def _dflash_generate(
     output_ids[:, num_input_tokens:num_input_tokens+1] = sample(output.logits, temperature)
     if block_size > 1:
         target_hidden = extract_context_feature(output.hidden_states, model.target_layer_ids)
+    # Fix: use prefill_start instead of undefined variable `pr`
     time_to_first_token = _cuda_time() - prefill_start
-
-    decode_start = _cuda_time()
-    start = input_ids.shape[1]
-    acceptance_lengths = []
-    # NOTE: draft_p
