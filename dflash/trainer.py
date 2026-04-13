@@ -1,0 +1,151 @@
+"""Training utilities for dflash distributed flash attention benchmarking."""
+
+import time
+from typing import Optional, Dict, Any
+
+import torch
+import torch.nn as nn
+import torch.distributed as dist
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
+from dflash.benchmark import (
+    _dist_is_main,
+    _dist_rank,
+    _dist_local_rank,
+)
+
+
+class Trainer:
+    """Handles training loop, optimizer, and metrics collection for benchmarking."""
+
+    def __init__(
+        self,
+        model: nn.Module,
+        config: Dict[str, Any],
+        device: Optional[torch.device] = None,
+    ):
+        """
+        Args:
+            model: The model to train.
+            config: Training configuration dictionary.
+            device: Target device. Defaults to CUDA if available.
+        """
+        self.model = model
+        self.config = config
+        self.device = device or torch.device(
+            f"cuda:{_dist_local_rank()}" if torch.cuda.is_available() else "cpu"
+        )
+
+        self.lr = config.get("lr", 1e-4)
+        self.weight_decay = config.get("weight_decay", 0.01)
+        self.max_steps = config.get("max_steps", 100)
+        self.warmup_steps = config.get("warmup_steps", 10)
+        self.log_interval = config.get("log_interval", 10)
+        self.grad_clip = config.get("grad_clip", 1.0)
+
+        self.optimizer = AdamW(
+            self.model.parameters(),
+            lr=self.lr,
+            weight_decay=self.weight_decay,
+        )
+        self.scheduler = CosineAnnealingLR(
+            self.optimizer, T_max=self.max_steps
+        )
+
+        self.step = 0
+        self.metrics: Dict[str, list] = {
+            "loss": [],
+            "throughput": [],  # tokens/sec
+            "step_time": [],   # seconds
+        }
+
+    def _log(self, msg: str) -> None:
+        """Print only from the main process."""
+        if _dist_is_main():
+            print(f"[rank {_dist_rank()} | step {self.step}] {msg}")
+
+    def train_step(
+        self, input_ids: torch.Tensor, labels: torch.Tensor
+    ) -> float:
+        """Run a single forward-backward-optimizer step.
+
+        Args:
+            input_ids: Token ids of shape (batch, seq_len).
+            labels: Target token ids of shape (batch, seq_len).
+
+        Returns:
+            Scalar loss value for this step.
+        """
+        self.model.train()
+        input_ids = input_ids.to(self.device)
+        labels = labels.to(self.device)
+
+        t0 = time.perf_counter()
+
+        with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+            outputs = self.model(input_ids=input_ids, labels=labels)
+            loss = outputs.loss if hasattr(outputs, "loss") else outputs[0]
+
+        self.optimizer.zero_grad()
+        loss.backward()
+
+        if self.grad_clip > 0:
+            nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+
+        self.optimizer.step()
+        self.scheduler.step()
+
+        elapsed = time.perf_counter() - t0
+        num_tokens = input_ids.numel()
+        throughput = num_tokens / elapsed
+
+        self.metrics["loss"].append(loss.item())
+        self.metrics["throughput"].append(throughput)
+        self.metrics["step_time"].append(elapsed)
+
+        self.step += 1
+        return loss.item()
+
+    def train(
+        self, dataloader: torch.utils.data.DataLoader
+    ) -> Dict[str, list]:
+        """Run the full training loop.
+
+        Args:
+            dataloader: Iterable yielding (input_ids, labels) batches.
+
+        Returns:
+            Dictionary of collected metrics.
+        """
+        self._log(f"Starting training for {self.max_steps} steps.")
+
+        for batch in dataloader:
+            if self.step >= self.max_steps:
+                break
+
+            input_ids, labels = batch
+            loss = self.train_step(input_ids, labels)
+
+            if self.step % self.log_interval == 0:
+                avg_throughput = sum(self.metrics["throughput"][-self.log_interval:]) / self.log_interval
+                self._log(
+                    f"loss={loss:.4f}  "
+                    f"throughput={avg_throughput:.0f} tok/s  "
+                    f"lr={self.scheduler.get_last_lr()[0]:.2e}"
+                )
+
+        self._log("Training complete.")
+        return self.metrics
+
+    def summary(self) -> Dict[str, float]:
+        """Return aggregate statistics over the training run."""
+        def _mean(lst):
+            return sum(lst) / len(lst) if lst else 0.0
+
+        return {
+            "mean_loss": _mean(self.metrics["loss"]),
+            "mean_throughput": _mean(self.metrics["throughput"]),
+            "mean_step_time": _mean(self.metrics["step_time"]),
+            "total_steps": self.step,
+        }
