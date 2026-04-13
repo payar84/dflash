@@ -17,3 +17,13 @@ def version_info():
     import sys
     py_ver = sys.version.split()[0]
     print(f"dflash version: {ver} (personal fork of z-lab/dflash) | Python {py_ver}")
+
+# Return version string instead of just printing - makes it easier to use
+# programmatically (e.g. in notebooks or assertion checks)
+def get_version():
+    """Return the dflash version string, or 'unknown' if not found."""
+    try:
+        import importlib.metadata
+        return importlib.metadata.version("dflash")
+    except Exception:
+        return "unknown"
