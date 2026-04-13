@@ -57,16 +57,16 @@ vllm serve Qwen/Qwen3.5-27B \
   --attention-backend flash_attn
 ```
 
-> **Personal note:** I found `num_speculative_tokens` of 10-12 to be a better sweet spot on my 2×A6000 setup — 15 starts to hurt latency on smaller GPUs. YMMV depending on your target model size.
+> **Personal note:** I found `num_speculative_tokens: 10` to be a better default for my use case (shorter prompts on a 40GB A100) — 15 can cause OOM with larger batch sizes.
 
 ### SGLang
 
 ```bash
 SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
   --model-path Qwen/Qwen3.5-27B \
-  --speculative-algorithm EAGLE \
+  --speculative-algorithm dflash \
   --speculative-draft-model-path z-lab/Qwen3.5-27B-DFlash \
-  --speculative-num-steps 5 \
-  --speculative-eagle-topk 4 \
+  --speculative-num-steps 15 \
+  --speculative-eagle-topk 1 \
   --speculative-num-draft-tokens 15
 ```
