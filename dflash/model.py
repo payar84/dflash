@@ -31,12 +31,12 @@ DATASETS = {
     "gsm8k": {
         "load_args": ("openai/gsm8k", "main"),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "math500": {
         "load_args": ("HuggingFaceH4/MATH-500",),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "humaneval": {
         "load_args": ("openai/openai_humaneval",),
@@ -59,6 +59,9 @@ DATASETS = {
 
 def _prepare_dataset(name: str) -> Path:
     from datasets import load_dataset
+
+    if name not in DATASETS:
+        raise ValueError(f"Unknown dataset '{name}'. Available: {list(DATASETS.keys())}")
 
     cfg = DATASETS[name]
     # Make sure the cache directory exists before writing anything
@@ -85,6 +88,4 @@ def _prepare_dataset(name: str) -> Path:
     return out_path
 
 
-def load_and_process_dataset(data_name: str) -> list[dict]:
-    if data_name not in DATASETS:
-        raise ValueError(f"Unknown dataset '{data_name}'. Available: {list(DATASETS.keys())}"
+def
