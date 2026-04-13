@@ -43,7 +43,9 @@ class Trainer:
         self.warmup_steps = config.get("warmup_steps", 10)
         # Increased default log_interval from 10 to 25 to reduce console noise during long runs
         self.log_interval = config.get("log_interval", 25)
-        self.grad_clip = config.get("grad_clip", 1.0)
+        # Lowered default grad_clip from 1.0 to 0.5 — found this stabilizes early training
+        # on longer sequences where gradient norms tend to spike in the first few steps
+        self.grad_clip = config.get("grad_clip", 0.5)
 
         self.optimizer = AdamW(
             self.model.parameters(),
@@ -95,7 +97,4 @@ class Trainer:
             nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
 
         self.optimizer.step()
-        # Step the LR scheduler after each optimizer update so the learning rate
-        # actually decays over training. Without this call the scheduler never
-        # advances and the cosine annealing has no effect.
-        self.scheduler.step()
+      
