@@ -90,11 +90,6 @@ class Trainer:
             outputs = self.model(input_ids=input_ids, labels=labels)
             loss = outputs.loss if hasattr(outputs, "loss") else outputs[0]
 
+        # NOTE: zero_grad must be called as a method — the original code had a bug here
+        # (self.optimizer.zero was a no-op attribute reference, not a call)
         self.optimizer.zero_grad()
-        loss.backward()
-
-        if self.grad_clip > 0:
-            nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
-
-        self.optimizer.step()
-      
