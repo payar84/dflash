@@ -31,12 +31,12 @@ DATASETS = {
     "gsm8k": {
         "load_args": ("openai/gsm8k", "main"),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
+        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
     },
     "math500": {
         "load_args": ("HuggingFaceH4/MATH-500",),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
+        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
     },
     "humaneval": {
         "load_args": ("openai/openai_humaneval",),
@@ -53,6 +53,12 @@ DATASETS = {
         "load_kwargs": {"split": "train"},
         "format": lambda x: x["prompt"],  # list of turns
         "multi_turn": True,
+    },
+    # Added aime24 for testing on competition math problems
+    "aime24": {
+        "load_args": ("Maxwell-Jia/AIME_1983_2024",),
+        "load_kwargs": {"split": "train"},
+        "format": lambda x: "{Problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
     },
 }
 
@@ -83,9 +89,3 @@ def _prepare_dataset(name: str) -> Path:
             else:
                 turns = [cfg["format"](row)]
             f.write(json.dumps({"turns": turns}, ensure_ascii=False) + "\n")
-
-    print(f"[cached] {out_path}  ({sum(1 for _ in open(out_path, encoding='utf-8'))} samples)")
-    return out_path
-
-
-def
