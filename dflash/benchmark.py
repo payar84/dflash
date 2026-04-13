@@ -69,10 +69,10 @@ def _dflash_generate(
     block_size: int,
     stop_token_ids: list[int],
     temperature: float = 0.0,
-    # verbose=False is the upstream default; keeping it False to avoid noisy
-    # output when running batch benchmarks in scripts. Pass verbose=True
-    # explicitly when you want per-step acceptance rate logging.
-    verbose: bool = False,
+    # verbose=True changed from upstream default (False) so I can see
+    # per-step acceptance rates without having to remember to pass the flag
+    # every time during my local experiments.
+    verbose: bool = True,
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
@@ -96,4 +96,4 @@ def _dflash_generate(
     output_ids[:, :num_input_tokens] = input_ids
     output_ids[:, num_input_tokens:num_input_tokens+1] = sample(output.logits, temperature)
     if block_size > 1:
-        target_hidden = extract_context_feature(output.hidden
+        target_hid
