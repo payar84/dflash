@@ -54,7 +54,19 @@ uv pip install -U vllm --torch-backend=auto --extra-index-url https://wheels.vll
 ```bash
 vllm serve Qwen/Qwen3.5-27B \
   --speculative-config '{"method": "dflash", "model": "z-lab/Qwen3.5-27B-DFlash", "num_speculative_tokens": 15}' \
-  --atten
+  --attention-backend flash_attn
 ```
 
-> **Personal note:** I found that `num_speculative_tokens` between 10 and 15 tends to give the best throughput/quality tradeoff on an A100 80GB. Going above 15 can hurt acceptance rate enough to negate the gains.
+> **Personal note:** I found `num_speculative_tokens` of 10-12 to be a better sweet spot on my 2×A6000 setup — 15 starts to hurt latency on smaller GPUs. YMMV depending on your target model size.
+
+### SGLang
+
+```bash
+SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
+  --model-path Qwen/Qwen3.5-27B \
+  --speculative-algorithm EAGLE \
+  --speculative-draft-model-path z-lab/Qwen3.5-27B-DFlash \
+  --speculative-num-steps 5 \
+  --speculative-eagle-topk 4 \
+  --speculative-num-draft-tokens 15
+```
