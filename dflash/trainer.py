@@ -95,7 +95,7 @@ class Trainer:
             nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
 
         self.optimizer.step()
+        # Step the LR scheduler after each optimizer update so the learning rate
+        # actually decays over training. Without this call the scheduler never
+        # advances and the cosine annealing has no effect.
         self.scheduler.step()
-
-        elapsed = time.perf_counter() - t0
-        num_tokens = input_ids.numel()
