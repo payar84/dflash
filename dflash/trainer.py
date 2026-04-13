@@ -41,7 +41,8 @@ class Trainer:
         self.weight_decay = config.get("weight_decay", 0.01)
         self.max_steps = config.get("max_steps", 100)
         self.warmup_steps = config.get("warmup_steps", 10)
-        self.log_interval = config.get("log_interval", 10)
+        # Increased default log_interval from 10 to 25 to reduce console noise during long runs
+        self.log_interval = config.get("log_interval", 25)
         self.grad_clip = config.get("grad_clip", 1.0)
 
         self.optimizer = AdamW(
@@ -98,54 +99,3 @@ class Trainer:
 
         elapsed = time.perf_counter() - t0
         num_tokens = input_ids.numel()
-        throughput = num_tokens / elapsed
-
-        self.metrics["loss"].append(loss.item())
-        self.metrics["throughput"].append(throughput)
-        self.metrics["step_time"].append(elapsed)
-
-        self.step += 1
-        return loss.item()
-
-    def train(
-        self, dataloader: torch.utils.data.DataLoader
-    ) -> Dict[str, list]:
-        """Run the full training loop.
-
-        Args:
-            dataloader: Iterable yielding (input_ids, labels) batches.
-
-        Returns:
-            Dictionary of collected metrics.
-        """
-        self._log(f"Starting training for {self.max_steps} steps.")
-
-        for batch in dataloader:
-            if self.step >= self.max_steps:
-                break
-
-            input_ids, labels = batch
-            loss = self.train_step(input_ids, labels)
-
-            if self.step % self.log_interval == 0:
-                avg_throughput = sum(self.metrics["throughput"][-self.log_interval:]) / self.log_interval
-                self._log(
-                    f"loss={loss:.4f}  "
-                    f"throughput={avg_throughput:.0f} tok/s  "
-                    f"lr={self.scheduler.get_last_lr()[0]:.2e}"
-                )
-
-        self._log("Training complete.")
-        return self.metrics
-
-    def summary(self) -> Dict[str, float]:
-        """Return aggregate statistics over the training run."""
-        def _mean(lst):
-            return sum(lst) / len(lst) if lst else 0.0
-
-        return {
-            "mean_loss": _mean(self.metrics["loss"]),
-            "mean_throughput": _mean(self.metrics["throughput"]),
-            "mean_step_time": _mean(self.metrics["step_time"]),
-            "total_steps": self.step,
-        }
