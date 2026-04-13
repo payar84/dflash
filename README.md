@@ -57,7 +57,7 @@ vllm serve Qwen/Qwen3.5-27B \
   --attention-backend flash_attn
 ```
 
-> **Personal note:** I found `num_speculative_tokens: 10` to be a better default for my use case (shorter prompts on a 40GB A100) — 15 can cause OOM with larger batch sizes.
+> **Tip:** I found `num_speculative_tokens` between 10 and 20 to be the sweet spot — going higher doesn't always improve throughput and can hurt acceptance rate depending on the task.
 
 ### SGLang
 
@@ -66,7 +66,13 @@ SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
   --model-path Qwen/Qwen3.5-27B \
   --speculative-algorithm dflash \
   --speculative-draft-model-path z-lab/Qwen3.5-27B-DFlash \
-  --speculative-num-steps 15 \
-  --speculative-eagle-topk 1 \
+  --speculative-num-steps 5 \
+  --speculative-eagle-topk 4 \
   --speculative-num-draft-tokens 15
 ```
+
+## 📝 Notes (Personal)
+
+- Forked mainly to experiment with Llama-3.1-8B-Instruct + DFlash on my local 3090.
+- The Transformers backend is the easiest to get running for quick tests without a full vLLM setup.
+- `num_speculative_tokens=10` seems to work well for the 8B model on 24GB VRAM.
