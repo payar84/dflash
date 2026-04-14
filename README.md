@@ -54,10 +54,10 @@ uv pip install -U vllm --torch-backend=auto --extra-index-url https://wheels.vll
 ```bash
 vllm serve Qwen/Qwen3.5-27B \
   --speculative-config '{"method": "dflash", "model": "z-lab/Qwen3.5-27B-DFlash", "num_speculative_tokens": 15}' \
-  --attention-backend flash_attn
+  --gpu-memory-utilization 0.90
 ```
 
-> **Tip:** I found `num_speculative_tokens` between 10 and 20 to be the sweet spot — going higher doesn't always improve throughput and can hurt acceptance rate depending on the task.
+> **Personal note:** I found that bumping `--gpu-memory-utilization` to `0.90` (from the default `0.85`) gives a bit more headroom for the draft model on my 80GB A100 without running into OOM issues. Your mileage may vary depending on the target model size.
 
 ### SGLang
 
@@ -71,8 +71,13 @@ SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
   --speculative-num-draft-tokens 15
 ```
 
-## 📝 Notes (Personal)
+### Transformers
 
-- Forked mainly to experiment with Llama-3.1-8B-Instruct + DFlash on my local 3090.
-- The Transformers backend is the easiest to get running for quick tests without a full vLLM setup.
-- `num_speculative_tokens=10` seems to work well for the 8B model on 24GB VRAM.
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from dflash import DFlashModel
+
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-27B")
+target = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-27B", device_map="auto")
+draft = DFlashModel.from_pretrained("z-lab/Qwen3.5-27B-DFlash", device_map="auto")
+```
