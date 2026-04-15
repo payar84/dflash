@@ -54,10 +54,11 @@ uv pip install -U vllm --torch-backend=auto --extra-index-url https://wheels.vll
 ```bash
 vllm serve Qwen/Qwen3.5-27B \
   --speculative-config '{"method": "dflash", "model": "z-lab/Qwen3.5-27B-DFlash", "num_speculative_tokens": 15}' \
-  --gpu-memory-utilization 0.90
+  --gpu-memory-utilization 0.9 \
+  --max-model-len 8192
 ```
 
-> **Personal note:** I found that bumping `--gpu-memory-utilization` to `0.90` (from the default `0.85`) gives a bit more headroom for the draft model on my 80GB A100 without running into OOM issues. Your mileage may vary depending on the target model size.
+> **Personal note:** I've found `num_speculative_tokens` between 10 and 15 to be the sweet spot on my setup (2x A100 40GB). Going above 15 didn't improve throughput meaningfully and sometimes hurt acceptance rate.
 
 ### SGLang
 
@@ -71,13 +72,13 @@ SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
   --speculative-num-draft-tokens 15
 ```
 
-### Transformers
+## 📄 Citation
 
-```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from dflash import DFlashModel
+If you find DFlash useful, please cite:
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-27B")
-target = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-27B", device_map="auto")
-draft = DFlashModel.from_pretrained("z-lab/Qwen3.5-27B-DFlash", device_map="auto")
+```bibtex
+@article{dflash2025,
+  title={DFlash: Block Diffusion for Flash Speculative Decoding},
+  year={2025}
+}
 ```
