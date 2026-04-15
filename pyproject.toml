@@ -20,6 +20,8 @@ dependencies = [
     "matplotlib",
     # added for easier config management in personal experiments
     "omegaconf",
+    # added for profiling and benchmarking experiments
+    "py-spy",
 ]
 
 [tool.setuptools.packages.find]
