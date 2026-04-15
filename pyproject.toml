@@ -15,6 +15,9 @@ dependencies = [
     "tqdm",
     "datasets",
     "requests",
+    # added for local experiment notebooks
+    "jupyter",
+    "matplotlib",
 ]
 
 [tool.setuptools.packages.find]
