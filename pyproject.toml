@@ -18,6 +18,8 @@ dependencies = [
     # added for local experiment notebooks
     "jupyter",
     "matplotlib",
+    # added for easier config management in personal experiments
+    "omegaconf",
 ]
 
 [tool.setuptools.packages.find]
