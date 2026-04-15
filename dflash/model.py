@@ -31,12 +31,12 @@ DATASETS = {
     "gsm8k": {
         "load_args": ("openai/gsm8k", "main"),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "math500": {
         "load_args": ("HuggingFaceH4/MATH-500",),
         "load_kwargs": {"split": "test"},
-        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
     "humaneval": {
         "load_args": ("openai/openai_humaneval",),
@@ -57,8 +57,15 @@ DATASETS = {
     # Added aime24 for testing on competition math problems
     "aime24": {
         "load_args": ("Maxwell-Jia/AIME_1983_2024",),
+        # Using split="train" since this dataset doesn't have a dedicated test split
         "load_kwargs": {"split": "train"},
-        "format": lambda x: "{Problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}.".format(**x),
+        "format": lambda x: "{Problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
+    },
+    # Added aime25 for the most recent competition problems
+    "aime25": {
+        "load_args": ("Maxwell-Jia/AIME_2025",),
+        "load_kwargs": {"split": "train"},
+        "format": lambda x: "{Problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}." .format(**x),
     },
 }
 
@@ -80,12 +87,4 @@ def _prepare_dataset(name: str) -> Path:
         return out_path
 
     print(f"[download] {name} ...")
-    dataset = load_dataset(*cfg["load_args"], **cfg["load_kwargs"])
-
-    with open(out_path, "w", encoding="utf-8") as f:
-        for row in dataset:
-            if cfg.get("multi_turn"):
-                turns = cfg["format"](row)
-            else:
-                turns = [cfg["format"](row)]
-            f.write(json.dumps({"turns": turns}, ensure_ascii=False) + "\n")
+    dataset = load_dataset(*cfg["load_args"], **cfg["load_kwargs"
