@@ -73,6 +73,10 @@ def _dflash_generate(
     # per-step acceptance rates without having to remember to pass the flag
     # every time during my local experiments.
     verbose: bool = True,
+    # log_interval controls how often (in generation steps) we print
+    # acceptance rate info when verbose=True. Upstream prints every step
+    # which gets noisy for long generations; every 10 steps is cleaner.
+    log_interval: int = 10,
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
