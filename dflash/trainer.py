@@ -61,6 +61,7 @@ class Trainer:
             "loss": [],
             "throughput": [],  # tokens/sec
             "step_time": [],   # seconds
+            "grad_norm": [],   # tracking grad norms helps spot instability early
         }
 
     def _log(self, msg: str) -> None:
@@ -90,6 +91,4 @@ class Trainer:
             outputs = self.model(input_ids=input_ids, labels=labels)
             loss = outputs.loss if hasattr(outputs, "loss") else outputs[0]
 
-        # NOTE: zero_grad must be called as a method — the original code had a bug here
-        # (self.optimizer.zero was a no-op attribute reference, not a call)
-        self.optimizer.zero_grad()
+        # NOTE: zero_grad m
