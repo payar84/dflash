@@ -27,3 +27,11 @@ def get_version():
         return importlib.metadata.version("dflash")
     except Exception:
         return "unknown"
+
+# NOTE: version_info() returns None (just prints), which is awkward in notebooks.
+# Patching it here to also return the version string for convenience.
+_original_version_info = version_info
+def version_info():
+    """Print fork info and upstream package version. Also returns the version string."""
+    _original_version_info()
+    return get_version()
