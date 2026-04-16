@@ -89,6 +89,5 @@ class Trainer:
 
         with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
             outputs = self.model(input_ids=input_ids, labels=labels)
-            loss = outputs.loss if hasattr(outputs, "loss") else outputs[0]
-
-        # NOTE: zero_grad m
+            # Fix: was referencing undefined `out` instead of `outputs`
+            loss = outputs.loss
