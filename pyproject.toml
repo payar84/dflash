@@ -22,6 +22,8 @@ dependencies = [
     "omegaconf",
     # added for profiling and benchmarking experiments
     "py-spy",
+    # added for experiment result tracking
+    "wandb",
 ]
 
 [tool.setuptools.packages.find]
