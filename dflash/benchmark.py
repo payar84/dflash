@@ -76,7 +76,9 @@ def _dflash_generate(
     # log_interval controls how often (in generation steps) we print
     # acceptance rate info when verbose=True. Upstream prints every step
     # which gets noisy for long generations; every 10 steps is cleaner.
-    log_interval: int = 10,
+    # Bumped from 10 to 25 after finding even 10 was too chatty on my
+    # typical 512-token generations.
+    log_interval: int = 25,
 ) -> SimpleNamespace:
     num_input_tokens = input_ids.shape[1]
     max_length = num_input_tokens + max_new_tokens
@@ -95,9 +97,4 @@ def _dflash_generate(
         past_key_values=past_key_values_target,
         use_cache=True,
         logits_to_keep=1,
-        output_hidden_states=True if block_size > 1 else False,
-    )
-    output_ids[:, :num_input_tokens] = input_ids
-    output_ids[:, num_input_tokens:num_input_tokens+1] = sample(output.logits, temperature)
-    if block_size > 1:
-        target_hid
+        output_hidden_states=True 
