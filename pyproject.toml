@@ -24,6 +24,8 @@ dependencies = [
     "py-spy",
     # added for experiment result tracking
     "wandb",
+    # added for faster JSON serialization in result logging
+    "orjson",
 ]
 
 [tool.setuptools.packages.find]
